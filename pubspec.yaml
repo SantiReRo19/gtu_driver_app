@@ -58,7 +58,22 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
+  assets:
+    - assets/
+    # An asset can be a file or a directory. If it is a directory, all files
+    # in that directory will be included in the application.
+    # For example, if you have an image at assets/images/a_dot_burr.jpeg,
+    # you can include it like this:
+    # - assets/images/a_dot_burr.jpeg
+    # If you have multiple images in the same directory, you can include them all
+    # by specifying the directory:
+    # - assets/images/
+    #
+    # You can also include files from package dependencies, like this:
+    # - package_name/assets/images/a_dot_burr.jpeg
+    #
+    # For example, if you have an image at images/a_dot_burr.jpeg and
+    # images/a_dot_ham.jpeg, you can include them like this:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 
