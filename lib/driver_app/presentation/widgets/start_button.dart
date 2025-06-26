@@ -43,7 +43,7 @@ class _StartButtonState extends State<StartButton> with SingleTickerProviderStat
       child: ElevatedButton(
         onPressed: widget.onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF4A90E2), // Blue color
+          backgroundColor: const Color(0xFF4A90E2),
           padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:gtu_driver_app/driver_app/presentation/widgets/profile_drawer.dart';
 import 'package:gtu_driver_app/driver_app/data/models/driver.dart';
 
+import 'home_page.dart';
+
 class Login extends StatelessWidget {
   const Login({super.key});
 
@@ -97,11 +99,12 @@ class LoginScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     onPressed: () {
-                      final driver = Driver(
-                        name: "Esther Howard",
-                        profileImageUrl: null,
+                      // Al presionar el botón, navega a HomePage y cierra Login
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (context) => const HomePage(),
+                        ),
                       );
-                      showProfileDrawer(context, driver);
                     },
                     child: const Text(
                       'Iniciar sesión',
