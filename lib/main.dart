@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:gtu_driver_app/features/driver_profile/presentation/pages/login.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const Login());
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
