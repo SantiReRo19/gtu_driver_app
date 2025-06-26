@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gtu_driver_app/driver_app/presentation/widgets/update_password.dart';
 
 class ProfileDrawer extends StatelessWidget {
   final String name;
@@ -16,6 +17,21 @@ class ProfileDrawer extends StatelessWidget {
   });
 
   bool get isConnected => false; // Simulación de estado de conexión
+
+  void showUpdatePasswordDrawer(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => UpdatePasswordDrawer(
+        onUpdate: (oldPass, newPass) {
+          // Aquí puedes hacer la petición al backend para cambiar la contraseña
+          print('Contraseña anterior: $oldPass');
+          print('Nueva contraseña: $newPass');
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,14 +105,16 @@ class ProfileDrawer extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _buildTile(Icons.person_outline, 'Tu perfil'),
+                    _buildTile(context, Icons.person_outline, 'Tu perfil'),
                     _buildTile(
+                      context,
                       Icons.privacy_tip_outlined,
                       'Política de privacidad',
                     ),
-                    _buildTile(Icons.update, 'Actualizar contraseña'),
+                    _buildTile(context, Icons.update, 'Actualizar contraseña'),
                     const Divider(),
                     _buildTile(
+                      context,
                       Icons.logout,
                       'Cerrar sesión',
                       color: Colors.red,
@@ -112,6 +130,7 @@ class ProfileDrawer extends StatelessWidget {
   }
 
   Widget _buildTile(
+    BuildContext context,
     IconData icon,
     String title, {
     Color color = Colors.black87,
@@ -122,7 +141,30 @@ class ProfileDrawer extends StatelessWidget {
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: () {
         // Acción por item
+        if (title == 'Actualizar contraseña') {
+          showUpdatePasswordPanel(context);
+        } else if (title == 'Cerrar sesión') {
+          // Aquí puedes implementar la lógica para cerrar sesión
+          print('Cerrar sesión');
+        } else {
+          print('Navegar a $title');
+        }
       },
+    );
+  }
+
+  void showUpdatePasswordPanel(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => UpdatePasswordDrawer(
+        onUpdate: (oldPass, newPass) {
+          // Aquí puedes hacer la petición al backend para cambiar la contraseña
+          print('Contraseña anterior: $oldPass');
+          print('Nueva contraseña: $newPass');
+        },
+      ),
     );
   }
 }
