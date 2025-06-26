@@ -22,9 +22,9 @@ class ProfileDrawer extends StatelessWidget {
     return SafeArea(
       child: SingleChildScrollView(
         child: Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFF4A90E2),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: BoxDecoration(
+            color: Colors.green.shade200,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           child: Column(

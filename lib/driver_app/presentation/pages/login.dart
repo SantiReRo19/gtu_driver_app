@@ -182,14 +182,14 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF4A90E2),
+      backgroundColor: Colors.white,
       body: Center(
         child: SingleChildScrollView(
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 24),
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.blue[50],
               borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
@@ -242,7 +242,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green[400],
+                      backgroundColor: const Color.fromARGB(255, 52, 112, 152),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),
@@ -263,7 +263,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: const Text(
                     '¿Olvidaste tu contraseña?',
                     style: TextStyle(
-                      color: Colors.green,
+                      color: Color.fromARGB(255, 52, 112, 152),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
