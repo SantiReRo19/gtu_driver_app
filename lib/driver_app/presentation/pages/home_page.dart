@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gtu_driver_app/driver_app/presentation/widgets/profile_drawer.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../widgets/home/start_section.dart';
 import '../widgets/home/panel_main.dart';
 import '../widgets/home/bottom_menu.dart';
@@ -8,6 +11,7 @@ import '../widgets/confirmation_dialog.dart';
 import '../widgets/home/welcome_header.dart';
 import '../widgets/driver_status.dart';
 import '../../data/models/driver_data.dart';
+import 'package:http/http.dart' as http;
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -34,7 +38,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   late Timer? timer;
   DateTime currentTime = DateTime.now();
-
+  static const _eventChannel = EventChannel(
+    "com.example.gtu_driver_app/stream_ubicacion",
+  );
+  static const _methodChannel = MethodChannel(
+    "com.example.gtu_driver_app/bg_service",
+  );
   @override
   void initState() {
     super.initState();
@@ -91,6 +100,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     elementsOpacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: elementsOpacityController, curve: Curves.easeIn),
     );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _requestLocationPermission();
+    });
   }
 
   @override
@@ -103,9 +116,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  void onStartPressed() {
+  void onStartPressed() async {
     if (status != DriverStatus.inactive) return;
-
+    // hacer http activar ruta enviar socket
     setState(() {
       status = DriverStatus.starting;
     });
@@ -218,5 +231,64 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ),
       ),
     );
+  }
+
+  Future<void> _requestLocationPermission() async {
+    final status = await Permission.location.status;
+
+    if (!status.isGranted) {
+      final result = await Permission.location.request();
+      if (!result.isGranted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("La app necesita acceso a la ubicación.")),
+        );
+      }
+    }
+  }
+
+  void _startLocationListener() {
+    _eventChannel.receiveBroadcastStream().listen(
+      (location) {
+        //
+      },
+      onError: (error) {
+        log("Error al recibir ubicación: $error");
+      },
+    );
+  }
+
+  Future<void> _startLocationService() async {
+    final status = await Permission.location.status;
+
+    if (status.isGranted) {
+      await _methodChannel.invokeMethod("startService");
+    } else {
+      final result = await Permission.location.request();
+
+      if (result.isGranted) {
+        await _methodChannel.invokeMethod("startService");
+      } else if (result.isPermanentlyDenied) {
+        openAppSettings();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Permiso denegado permanentemente. Ábrelo desde ajustes.",
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Permiso de ubicación no concedido.")),
+        );
+      }
+    }
+  }
+
+  Future<void> _stopLocationService() async {
+    try {
+      await _methodChannel.invokeMethod("stopService");
+    } catch (e) {
+      print("Error al detener el servicio: $e");
+    }
   }
 }

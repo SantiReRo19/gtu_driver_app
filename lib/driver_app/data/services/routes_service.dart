@@ -3,16 +3,41 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class RoutesService {
-  final String baseUrl = 'http://167.99.145.76'; 
+  final String baseUrl = 'https://api.gtuadmin.lat/api';
+
+  Future<void> startRoute(String routeId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    final url = Uri.parse('$baseUrl/assign-driver');
+
+    final response = await http.post(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      // Ruta iniciada correctamente
+      return;
+    } else if (response.statusCode == 401) {
+      // Token inválido o expirado
+      await prefs.clear();
+      throw Exception('Sesión expirada, vuelve a iniciar sesión');
+    } else {
+      throw Exception(
+        jsonDecode(response.body)['message'] ?? 'Error al iniciar ruta',
+      );
+    }
+  }
 
   // LISTAR RUTAS ASIGNADAS AL CONDUCTOR AUTENTICADO
   Future<List<Map<String, dynamic>>> getAssignedRoutes() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
-    final url = Uri.parse('$baseUrl/driver/routes');
-    final response = await http.get(url, headers: {
-      'Authorization': 'Bearer $token',
-    });
+    final url = Uri.parse('$baseUrl/assign-driver/assignments/2');
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -23,7 +48,9 @@ class RoutesService {
       await prefs.clear();
       throw Exception('Sesión expirada, vuelve a iniciar sesión');
     } else {
-      throw Exception(jsonDecode(response.body)['message'] ?? 'Error al obtener rutas');
+      throw Exception(
+        jsonDecode(response.body)['message'] ?? 'Error al obtener rutas',
+      );
     }
   }
 }
