@@ -43,3 +43,64 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Web related
+/web/
+
+# Coverage
+coverage/
+
+# Exceptions to above rules.
+!/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
+
+# Environment variables and sensitive configuration
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.env
+
+# Firebase configuration (if using Firebase)
+/android/app/google-services.json
+/ios/Runner/GoogleService-Info.plist
+/ios/firebase_app_id_file.json
+/lib/firebase_options.dart
+
+# Platform specific generated files
+*.g.dart
+*.freezed.dart
+*.chopper.dart
+
+# Generated plugin registrant files
+**/GeneratedPluginRegistrant.java
+**/GeneratedPluginRegistrant.swift
+**/GeneratedPluginRegistrant.m
+**/generated_plugin_registrant.dart
+
+# macOS specific
+**/Flutter/ephemeral/
+**/Pods/
+
+# Windows specific
+**/windows/flutter/ephemeral/
+
+# Linux specific
+**/linux/flutter/ephemeral/
+
+# Build outputs
+**/*.apk
+**/*.aab
+**/*.ipa
+**/*.exe
+**/*.dmg
+**/*.app
+
+# Keystore files (Android signing)
+*.jks
+*.keystore
+key.properties
+
+# iOS signing
+**/ios/**/*.mobileprovision
+**/ios/**/*.p12
