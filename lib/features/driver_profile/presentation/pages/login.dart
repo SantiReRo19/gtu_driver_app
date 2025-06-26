@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+//
+import 'package:gtu_driver_app/features/driver_profile/presentation/widgets/profileDrawer.dart';
+import 'package:gtu_driver_app/features/driver_profile/data/models/driver.dart';
 
 class Login extends StatelessWidget {
   const Login({super.key});
@@ -6,7 +9,7 @@ class Login extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'GTU Driver App',
+      title: 'Login',
       debugShowCheckedModeBanner: false,
       home: const LoginScreen(),
     );
@@ -15,6 +18,16 @@ class Login extends StatelessWidget {
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
+
+  void showProfileDrawer(BuildContext context, Driver driver) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) =>
+          ProfileDrawer(name: driver.name, imageUrl: driver.profileImageUrl),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +97,11 @@ class LoginScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     onPressed: () {
-                      // para iniciar se
+                      final driver = Driver(
+                        name: "Esther Howard",
+                        profileImageUrl: null,
+                      );
+                      showProfileDrawer(context, driver);
                     },
                     child: const Text(
                       'Iniciar sesión',
