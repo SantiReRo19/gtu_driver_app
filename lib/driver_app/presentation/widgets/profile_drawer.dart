@@ -2,10 +2,18 @@ import 'package:flutter/material.dart';
 
 class ProfileDrawer extends StatelessWidget {
   final String name;
+  final String email;
+  final String role;
   final String status = 'Conectado';
   final String? imageUrl;
 
-  const ProfileDrawer({super.key, required this.name, this.imageUrl});
+  const ProfileDrawer({
+    super.key,
+    required this.name,
+    required this.email,
+    required this.role,
+    this.imageUrl,
+  });
 
   bool get isConnected => false; // Simulación de estado de conexión
 

@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:gtu_driver_app/driver_app/presentation/widgets/profile_drawer.dart';
 import '../widgets/home/start_section.dart';
 import '../widgets/home/panel_main.dart';
 import '../widgets/home/bottom_menu.dart';
 import '../widgets/confirmation_dialog.dart';
 import '../widgets/home/welcome_header.dart';
 import '../widgets/driver_status.dart';
+import '../../data/models/driver_data.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -196,7 +198,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               child: FadeTransition(
                 opacity: elementsOpacityAnimation,
                 child: BottomMenu(
-                  onProfilePressed: () {},
+                  onProfilePressed: () async {
+                    final driverData = await getDriverData();
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (context) => ProfileDrawer(
+                        name: driverData['name'] ?? '',
+                        email: driverData['email'] ?? '',
+                        role: driverData['role'] ?? '',
+                      ),
+                    );
+                  },
                   onRoutesPressed: () {},
                   onOtherPressed: () {},
                 ),
