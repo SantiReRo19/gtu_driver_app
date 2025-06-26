@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:gtu_driver_app/driver_app/data/services/auth_service.dart';
 //
-import 'package:gtu_driver_app/driver_app/presentation/widgets/profile_drawer.dart';
-import 'package:gtu_driver_app/driver_app/data/models/driver.dart';
 
 import 'home_page.dart';
 
@@ -18,16 +17,165 @@ class Login extends StatelessWidget {
   }
 }
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
-  void showProfileDrawer(BuildContext context, Driver driver) {
-    showModalBottomSheet(
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
+
+  bool _loading = false;
+
+  Future<void> _handleLogin() async {
+    if (!mounted) return;
+    setState(() => _loading = true);
+
+    try {
+      final success = await _authService.login(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
+
+      if (!mounted) return;
+
+      if (success) {
+        setState(() => _loading = false);
+
+        Navigator.of(
+          context,
+        ).pushReplacement(MaterialPageRoute(builder: (_) => const HomePage()));
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() => _loading = false);
+
+      // Mostramos error al usuario
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Error'),
+          content: Text(e.toString().replaceAll('Exception: ', '')),
+          actions: [
+            TextButton(
+              onPressed: () {
+                if (Navigator.of(context).canPop()) {
+                  //regresar al login
+                  Navigator.of(context).pop();
+                }
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  void _showResetPasswordDialog() {
+    final TextEditingController _resetEmailController = TextEditingController();
+
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) =>
-          ProfileDrawer(name: driver.name, imageUrl: driver.profileImageUrl),
+      barrierDismissible: false, // evita tocar fuera y que quede negra
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            bool loading = false;
+
+            return AlertDialog(
+              title: const Text('Restablecer contraseña'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Ingresa tu correo electrónico:'),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _resetEmailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(
+                      hintText: 'Correo electrónico',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: loading
+                      ? null
+                      : () {
+                          Navigator.of(context).pop(); // cerrar modal
+                        },
+                  child: const Text('Cancelar'),
+                ),
+                TextButton(
+                  onPressed: loading
+                      ? null
+                      : () async {
+                          final email = _resetEmailController.text.trim();
+
+                          if (email.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Ingresa tu correo'),
+                              ),
+                            );
+                            return;
+                          }
+
+                          setStateDialog(() => loading = true);
+
+                          try {
+                            await _authService.resetPassword(email);
+
+                            if (context.mounted) {
+                              Navigator.of(context).pop(); // cerrar modal
+
+                              showDialog(
+                                context: context,
+                                builder: (_) => const AlertDialog(
+                                  title: Text('Correo enviado'),
+                                  content: Text(
+                                    'Revisa tu bandeja de entrada.',
+                                  ),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (!context.mounted) return;
+
+                            Navigator.of(context).pop(); // cerrar modal
+                            showDialog(
+                              context: context,
+                              builder: (_) => AlertDialog(
+                                title: const Text('Error'),
+                                content: Text(
+                                  e.toString().replaceAll('Exception: ', ''),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(),
+                                    child: const Text('OK'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                        },
+                  child: const Text('Enviar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -62,6 +210,7 @@ class LoginScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 TextField(
+                  controller: _emailController,
                   decoration: InputDecoration(
                     hintText: 'Email',
                     filled: true,
@@ -75,6 +224,7 @@ class LoginScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 TextField(
+                  controller: _passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
                     hintText: 'Contraseña',
@@ -98,25 +248,18 @@ class LoginScreen extends StatelessWidget {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    onPressed: () {
-                      // Al presionar el botón, navega a HomePage y cierra Login
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(
-                          builder: (context) => const HomePage(),
-                        ),
-                      );
-                    },
-                    child: const Text(
-                      'Iniciar sesión',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    onPressed: _loading ? null : _handleLogin,
+                    child: _loading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            'Iniciar sesión',
+                            style: TextStyle(color: Colors.white),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 16),
                 TextButton(
-                  onPressed: () {
-                    // recuperar contraseña
-                  },
+                  onPressed: _loading ? null : _showResetPasswordDialog,
                   child: const Text(
                     '¿Olvidaste tu contraseña?',
                     style: TextStyle(
