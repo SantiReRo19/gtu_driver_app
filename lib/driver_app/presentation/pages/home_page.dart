@@ -11,7 +11,7 @@ import '../widgets/confirmation_dialog.dart';
 import '../widgets/home/welcome_header.dart';
 import '../widgets/driver_status.dart';
 import '../../data/models/driver_data.dart';
-import 'package:http/http.dart' as http;
+import '../widgets/routes/bottom_routes_panel.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -222,7 +222,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       ),
                     );
                   },
-                  onRoutesPressed: () {},
+                  onRoutesPressed: () {
+                    showRoutesPanel(context);
+                  },
                   onOtherPressed: () {},
                 ),
               ),
