@@ -1,0 +1,1 @@
+enum DriverStatus { inactive, starting, active, offDuty }
