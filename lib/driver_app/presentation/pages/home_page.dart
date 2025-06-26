@@ -1,11 +1,11 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-import '../widgets/start_button_round.dart';
-import '../widgets/panel_main.dart';
-import '../widgets/bottom_menu.dart';
-import '../widgets/bus_animation.dart';
+import '../widgets/home/start_section.dart';
+import '../widgets/home/panel_main.dart';
+import '../widgets/home/bottom_menu.dart';
 import '../widgets/confirmation_dialog.dart';
+import '../widgets/home/welcome_header.dart';
+import '../widgets/driver_status.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -13,8 +13,6 @@ class HomePage extends StatefulWidget {
   @override
   State<HomePage> createState() => _HomePageState();
 }
-
-enum DriverStatus { inactive, starting, active, offDuty }
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   DriverStatus status = DriverStatus.inactive;
@@ -46,6 +44,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       });
     });
 
+    // Animaciones
     busMoveScaleController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
@@ -61,7 +60,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             curve: Curves.easeInOut,
           ),
         );
-
     busScaleAnimation = Tween<double>(begin: 1.0, end: 1.0).animate(
       CurvedAnimation(parent: busMoveScaleController, curve: Curves.easeInOut),
     );
@@ -71,7 +69,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 800),
       value: 1.0,
     );
-
     buttonFadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(parent: buttonFadeController, curve: Curves.easeOut),
     );
@@ -79,7 +76,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     headerOpacityController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 3000),
-      value: 1.0, // Empieza visible
+      value: 1.0,
     );
     headerOpacityAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(parent: headerOpacityController, curve: Curves.easeOut),
@@ -89,7 +86,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
-
     elementsOpacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: elementsOpacityController, curve: Curves.easeIn),
     );
@@ -144,6 +140,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     buttonFadeController.reverse();
     headerOpacityController.reset();
     elementsOpacityController.reset();
+    headerOpacityController.value = 1.0;
   }
 
   @override
@@ -155,56 +152,29 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       body: SafeArea(
         child: Stack(
           children: [
-            // Texto arriba "Listo para comenzar"
+            // Header de bienvenida
             if (status == DriverStatus.inactive ||
                 status == DriverStatus.offDuty)
               Positioned(
                 top: 150,
                 left: 0,
                 right: 0,
-                child: FadeTransition(
-                  opacity: headerOpacityController,
-                  child: const Center(
-                    child: Text(
-                      '¿Estas listo?',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 45,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black54,
-                        height: 1.2, // Reduce el espacio entre líneas
-                      ),
-                    ),
-                  ),
+                child: WelcomeHeader(
+                  opacity: headerOpacityAnimation,
+                  text: '¿Estas listo?',
                 ),
               ),
 
-            // Bus (imagen o gif) con animación
-            Align(
-              alignment: const Alignment(0, -0.1), // Más arriba del centro
-              child: BusAnimation(
-                positionAnimation: busPositionAnimation,
-                scaleAnimation: busScaleAnimation,
-                status: status,
-              ),
+            // Sección de inicio (bus + botón)
+            StartSection(
+              status: status,
+              busPositionAnimation: busPositionAnimation,
+              busScaleAnimation: busScaleAnimation,
+              onStartPressed: onStartPressed,
+              buttonActive: status == DriverStatus.offDuty ? false : true,
             ),
 
-            // Botón iniciar (grande, verde claro, con check al presionar)
-            if (status == DriverStatus.inactive ||
-                status == DriverStatus.offDuty)
-              Positioned(
-                top: size.height * 0.65,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: StartButtonRound(
-                    onPressed: onStartPressed,
-                    active: status == DriverStatus.offDuty ? false : true,
-                  ),
-                ),
-              ),
-
-            // Panel principal debajo del bus (hora, estado, ruta y botón "En ruta")
+            // Panel principal (hora, estado, ruta y botón "En ruta")
             if (status == DriverStatus.active ||
                 status == DriverStatus.starting)
               Positioned(
@@ -226,15 +196,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               child: FadeTransition(
                 opacity: elementsOpacityAnimation,
                 child: BottomMenu(
-                  onProfilePressed: () {
-                    // Acción de abrir popup perfil
-                  },
-                  onRoutesPressed: () {
-                    // Acción menú rutas
-                  },
-                  onOtherPressed: () {
-                    // Acción otra sección
-                  },
+                  onProfilePressed: () {},
+                  onRoutesPressed: () {},
+                  onOtherPressed: () {},
                 ),
               ),
             ),
