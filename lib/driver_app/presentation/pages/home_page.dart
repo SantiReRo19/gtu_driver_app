@@ -77,7 +77,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
     headerOpacityController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3000),
+      duration: const Duration(milliseconds: 1500),
       value: 1.0,
     );
     headerOpacityAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
