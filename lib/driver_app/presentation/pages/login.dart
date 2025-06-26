@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 //
-import 'package:gtu_driver_app/features/driver_profile/presentation/widgets/profileDrawer.dart';
-import 'package:gtu_driver_app/features/driver_profile/data/models/driver.dart';
+import 'package:gtu_driver_app/driver_app/presentation/widgets/profileDrawer.dart';
+import 'package:gtu_driver_app/driver_app/data/models/driver.dart';
 
 class Login extends StatelessWidget {
   const Login({super.key});

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:gtu_driver_app/features/driver_profile/presentation/pages/login.dart';
+import 'package:gtu_driver_app/driver_app/presentation/pages/login.dart';
 
 void main() {
   runApp(const Login());
