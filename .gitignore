@@ -104,3 +104,8 @@ key.properties
 # iOS signing
 **/ios/**/*.mobileprovision
 **/ios/**/*.p12
+
+
+**linux/flutter
+**macos/flutter
+**windows/flutter
