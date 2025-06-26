@@ -13,7 +13,11 @@ class RoutesService {
 
     final response = await http.post(
       url,
-      headers: {'Authorization': 'Bearer $token'},
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({'routeId': routeId}),
     );
 
     if (response.statusCode == 200) {
@@ -34,7 +38,7 @@ class RoutesService {
   Future<List<Map<String, dynamic>>> getAssignedRoutes() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
-    final url = Uri.parse('$baseUrl/assign-driver/assignments/2');
+    final url = Uri.parse('$baseUrl/assign-driver/assignments/driver/2');
     final response = await http.get(
       url,
       headers: {'Authorization': 'Bearer $token'},
@@ -42,8 +46,11 @@ class RoutesService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      // Asume que data['data'] es una lista de rutas
-      return List<Map<String, dynamic>>.from(data['data']);
+      if (kDebugMode) {
+        print('Response data: $data');
+      }
+
+      return [data['data'] as Map<String, dynamic>];
     } else if (response.statusCode == 401) {
       // Token inválido o expirado
       await prefs.clear();
@@ -56,21 +63,30 @@ class RoutesService {
   }
 
   Future<List<Map<String, dynamic>>> getAllRoutes() async {
-  final prefs = await SharedPreferences.getInstance();
-  final token = prefs.getString('token');
-  final url = Uri.parse('$baseUrl/routes');
-  final response = await http.get(url, headers: {
-    'Authorization': 'Bearer $token',
-  });
-  if (kDebugMode) {
-    print('Response status: ${response.statusCode}');
-  }
-
-  if (response.statusCode == 200) {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    final url = Uri.parse('$baseUrl/route-management/routes');
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
     final data = jsonDecode(response.body);
-    return List<Map<String, dynamic>>.from(data['data']);
-  } else {
-    throw Exception('Error al obtener todas las rutas');
+    if (kDebugMode) {
+      print('Response data: $data');
+    }
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (kDebugMode) {
+        print('Response data: $data');
+      }
+      return List<Map<String, dynamic>>.from(data['data']);
+    } else {
+      final data = jsonDecode(response.body);
+      if (kDebugMode) {
+        print('Response data: $data');
+      }
+      throw Exception('Error al obtener todas las rutas');
+    }
   }
-}
 }

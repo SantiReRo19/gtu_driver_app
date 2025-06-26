@@ -1,4 +1,4 @@
-package com.example.ubicacion
+package com.example.gtu_driver_app
 
 import android.Manifest
 import android.app.*

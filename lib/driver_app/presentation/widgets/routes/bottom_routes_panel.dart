@@ -10,44 +10,48 @@ class BottomRoutesPanel extends StatefulWidget {
 }
 
 class _BottomRoutesPanelState extends State<BottomRoutesPanel> {
-  late Future<Map<String, dynamic>> dataFuture;
   final RoutesService _routesService = RoutesService();
 
   @override
   void initState() {
     super.initState();
-    dataFuture = fetchRoutesData();
   }
 
   Future<Map<String, dynamic>> fetchRoutesData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userName = prefs.getString('userName') ?? '';
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userName = prefs.getString('userName') ?? '';
 
-    // Obtén la ruta asignada al conductor
-    final allRoutes = await _routesService.getAssignedRoutes();
+      // Obtén la ruta asignada al conductor
+      final myRoute = await _routesService.getAssignedRoutes();
+      final allRoutes = await _routesService.getAllRoutes();
 
-    // Busca la ruta asignada al conductor usando el nombre (ajusta según modelo real)
-    final myRoute = allRoutes.firstWhere(
-      (r) => r['assignedDriverName'] == userName,
-      orElse: () => <String, dynamic>{},
-    );
+      // Busca la ruta asignada al conductor usando el nombre (ajusta según modelo real)
 
-    return {
-      'myRoute': myRoute,
-      'allRoutes': allRoutes,
-    };
+      return {'myRoute': myRoute, 'allRoutes': allRoutes};
+    } catch (e) {
+      throw Exception('Error al cargar las rutas: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>>(
-      future: dataFuture,
+      future: fetchRoutesData(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
+        if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Error al cargar las rutas: ${snapshot.error}',
+              style: const TextStyle(color: Colors.red),
+            ),
+          );
+        }
 
-        final myRoute = snapshot.data?['myRoute'] as Map<String, dynamic>?;
+        final myRoute = snapshot.data?['myRoute'];
         final allRoutes = snapshot.data?['allRoutes'] as List<dynamic>? ?? [];
 
         return DraggableScrollableSheet(
@@ -75,32 +79,38 @@ class _BottomRoutesPanelState extends State<BottomRoutesPanel> {
                     ),
                   ),
                 ),
-                const Text('Rutas', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                const Text(
+                  'Rutas',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 18),
 
                 // Mi Ruta de Hoy
-                const Text('Mi Ruta de Hoy', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text(
+                  'Mi Ruta de Hoy',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
                 const SizedBox(height: 6),
 
                 myRoute != null
                     ? ExpansionTile(
                         tilePadding: EdgeInsets.zero,
                         title: Text(
-                          (myRoute['routeName'] ?? 'Ruta desconocida'),
-                          style: TextStyle(
-                            backgroundColor: Colors.green[100],
-                            color: Colors.green[900],
-                            fontWeight: FontWeight.w600,
-                          ),
+                          TextStyle(
+                                backgroundColor: Colors.green[100],
+                                color: Colors.green[900],
+                                fontWeight: FontWeight.w600,
+                              )
+                              as String,
                         ),
                         children: [
-                          if (myRoute['description'] != null)
-                            ListTile(
-                              title: Text('Descripción: ${myRoute['description']}'),
-                            ),
+                          //if (myRoute['description'] != null)
                           ListTile(
-                            title: Text('Conductor: ${myRoute['assignedDriverName'] ?? "Sin asignar"}'),
+                            title: Text(
+                              'Route: ${myRoute['routeId'] ?? 'Ruta desconocida'}',
+                            ),
                           ),
+                          ListTile(title: Text('Conductor: "}')),
                         ],
                       )
                     : Container(
@@ -117,34 +127,49 @@ class _BottomRoutesPanelState extends State<BottomRoutesPanel> {
                 const SizedBox(height: 24),
 
                 // Otras rutas
-                const Text('Otras Rutas', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text(
+                  'Otras Rutas',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
                 const SizedBox(height: 6),
 
                 if (allRoutes.isEmpty)
-                  const Text('No hay rutas registradas.', style: TextStyle(color: Colors.grey)),
-                ...allRoutes.where((e) =>
-                        (myRoute == null) ||
-                        (e['routeName'] != myRoute['routeName'] || e['assignedDriverName'] != myRoute['assignedDriverName']))
-                    .map((e) => ExpansionTile(
-                          tilePadding: EdgeInsets.zero,
-                          title: Text(
-                            (e['routeName'] ?? 'Ruta desconocida'),
-                            style: TextStyle(
-                              backgroundColor: Colors.blue[50],
-                              color: Colors.blue[900],
-                              fontWeight: FontWeight.w600,
+                  const Text(
+                    'No hay rutas registradas.',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ...allRoutes
+                    .where(
+                      (e) =>
+                          (myRoute == null) ||
+                          (e['routeName'] != myRoute['routeName'] ||
+                              e['assignedDriverName'] !=
+                                  myRoute['assignedDriverName']),
+                    )
+                    .map(
+                      (e) => ExpansionTile(
+                        tilePadding: EdgeInsets.zero,
+                        title: Text(
+                          (e['routeName'] ?? 'Ruta desconocida'),
+                          style: TextStyle(
+                            backgroundColor: Colors.blue[50],
+                            color: Colors.blue[900],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        children: [
+                          if (e['description'] != null)
+                            ListTile(
+                              title: Text('Descripción: ${e['description']}'),
+                            ),
+                          ListTile(
+                            title: Text(
+                              'Conductor asignado: ${e['assignedDriverName'] ?? "Sin asignar"}',
                             ),
                           ),
-                          children: [
-                            if (e['description'] != null)
-                              ListTile(
-                                title: Text('Descripción: ${e['description']}'),
-                              ),
-                            ListTile(
-                              title: Text('Conductor asignado: ${e['assignedDriverName'] ?? "Sin asignar"}'),
-                            ),
-                          ],
-                        )),
+                        ],
+                      ),
+                    ),
               ],
             ),
           ),
