@@ -12,16 +12,24 @@ class BottomRoutesPanel extends StatefulWidget {
 class _BottomRoutesPanelState extends State<BottomRoutesPanel> {
   final RoutesService _routesService = RoutesService();
 
+  // Variable para almacenar el nombre de usuario
+  String userName = '';
+
   @override
   void initState() {
     super.initState();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userName = prefs.getString('userName') ?? '';
+    });
   }
 
   Future<Map<String, dynamic>> fetchRoutesData() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final userName = prefs.getString('userName') ?? '';
-
       // Obtén la ruta asignada al conductor
       final myRoute = await _routesService.getAssignedRoutes();
       final allRoutes = await _routesService.getAllRoutes();
@@ -96,21 +104,30 @@ class _BottomRoutesPanelState extends State<BottomRoutesPanel> {
                     ? ExpansionTile(
                         tilePadding: EdgeInsets.zero,
                         title: Text(
-                          TextStyle(
-                                backgroundColor: Colors.green[100],
-                                color: Colors.green[900],
-                                fontWeight: FontWeight.w600,
-                              )
-                              as String,
+                          allRoutes.firstWhere(
+                                (e) => e['id'] == myRoute[0]['routeId'],
+                              )['name'] ??
+                              'Ruta desconocida',
+                          style: TextStyle(
+                            backgroundColor: Colors.green[100],
+                            color: Colors.green[900],
+                          ),
                         ),
                         children: [
                           //if (myRoute['description'] != null)
                           ListTile(
                             title: Text(
-                              'Route: ${myRoute['routeId'] ?? 'Ruta desconocida'}',
+                              allRoutes.firstWhere(
+                                    (e) => e['id'] == myRoute[0]['routeId'],
+                                  )['name'] ??
+                                  'Ruta desconocida',
                             ),
                           ),
-                          ListTile(title: Text('Conductor: "}')),
+                          ListTile(
+                            title: Text(
+                              'Conductor: ${userName ?? 'Sin asignar'}',
+                            ),
+                          ),
                         ],
                       )
                     : Container(
@@ -142,15 +159,13 @@ class _BottomRoutesPanelState extends State<BottomRoutesPanel> {
                     .where(
                       (e) =>
                           (myRoute == null) ||
-                          (e['routeName'] != myRoute['routeName'] ||
-                              e['assignedDriverName'] !=
-                                  myRoute['assignedDriverName']),
+                          (e['id'] != myRoute[0]['routeId']),
                     )
                     .map(
                       (e) => ExpansionTile(
                         tilePadding: EdgeInsets.zero,
                         title: Text(
-                          (e['routeName'] ?? 'Ruta desconocida'),
+                          '${e['name'] ?? 'Desconocida'}',
                           style: TextStyle(
                             backgroundColor: Colors.blue[50],
                             color: Colors.blue[900],
@@ -163,9 +178,7 @@ class _BottomRoutesPanelState extends State<BottomRoutesPanel> {
                               title: Text('Descripción: ${e['description']}'),
                             ),
                           ListTile(
-                            title: Text(
-                              'Conductor asignado: ${e['assignedDriverName'] ?? "Sin asignar"}',
-                            ),
+                            title: Text('Conductor asignado: "Sin asignar"}'),
                           ),
                         ],
                       ),

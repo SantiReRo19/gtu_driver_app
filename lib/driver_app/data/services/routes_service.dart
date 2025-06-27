@@ -62,7 +62,7 @@ class RoutesService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getAllRoutes() async {
+  Future<List<dynamic>> getAllRoutes() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
     final url = Uri.parse('$baseUrl/route-management/routes');
@@ -80,7 +80,7 @@ class RoutesService {
       if (kDebugMode) {
         print('Response data: $data');
       }
-      return List<Map<String, dynamic>>.from(data['data']);
+      return data['data'] as List<dynamic>;
     } else {
       final data = jsonDecode(response.body);
       if (kDebugMode) {
