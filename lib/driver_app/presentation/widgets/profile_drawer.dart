@@ -16,7 +16,7 @@ class ProfileDrawer extends StatelessWidget {
     this.imageUrl,
   });
 
-  bool get isConnected => false; // Simulación de estado de conexión
+  bool get isConnected => true; // Simulación de estado de conexión
 
   void showUpdatePasswordDrawer(BuildContext context) {
     showModalBottomSheet(
@@ -105,12 +105,6 @@ class ProfileDrawer extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    _buildTile(context, Icons.person_outline, 'Tu perfil'),
-                    _buildTile(
-                      context,
-                      Icons.privacy_tip_outlined,
-                      'Política de privacidad',
-                    ),
                     _buildTile(context, Icons.update, 'Actualizar contraseña'),
                     const Divider(),
                     _buildTile(
