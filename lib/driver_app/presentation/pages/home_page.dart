@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gtu_driver_app/driver_app/data/services/routes_service.dart';
@@ -194,19 +195,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     });
 
     final prefs = await SharedPreferences.getInstance();
-    final driverId = prefs.getString('userId'); // o como lo guardes
+    final driverId = prefs.getString('userId');
 
-    final sessionId = await routesService.getTrackingSessionId(driverId!);
+    final sessionId = await routesService.startTrackingSessionId(driverId!);
 
     _websocket = Websocketservice(
       driverId: driverId,
-      wsUrl: "ws://api.gtuadmin.lat/ws",
+      wsUrl: "ws://167.99.145.76/ws/tracking",
       onLocationReceived: (data) {},
+      onConnect: () {
+        _startLocationListener(); 
+      },
     );
-    _websocket!.sessionId = sessionId; // <-- así lo asignas
+    _websocket!.sessionId = sessionId;
     _websocket!.connect();
-
-    _startLocationListener();
 
     await buttonFadeController.forward();
     await busMoveScaleController.forward();
@@ -243,12 +245,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   void _retireTurn() async {
     if (status != DriverStatus.active) return;
 
+    final prefs = await SharedPreferences.getInstance();
+    final driverId = prefs.getString('userId');
+
+    final routesService = RoutesService();
+
     await _stopLocationService();
+    await routesService.endTrackingSessionId(driverId!);
     _websocket?.disconnect();
     _websocket = null;
     _locationSubscription?.cancel();
     _locationSubscription = null;
 
+    // Para no perderme, agregué estos comentarios, no los borren que es la guia del flujo
     // 1. Desvanece el panel
     await panelFadeController.reverse();
 
@@ -296,8 +305,16 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         if (parts.length == 2) {
           final lat = double.tryParse(parts[0]);
           final lon = double.tryParse(parts[1]);
-          if (lat != null && lon != null && _websocket != null) {
-            _websocket!.sendLocation(lat, lon);
+          if (lat != null &&
+              lon != null &&
+              _websocket != null &&
+              _websocket!.sessionId != null &&
+              _websocket!.client != null && _websocket!.client.isActive) {
+            try {
+              _websocket!.sendLocation(lat, lon);
+            } catch (e, st) {
+              if (kDebugMode) print('Error enviando ubicación: $e\n$st');
+            }
           }
         }
       },

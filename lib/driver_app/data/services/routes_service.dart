@@ -21,6 +21,7 @@ class RoutesService {
     );
 
     if (response.statusCode == 200) {
+      print('Ruta iniciada correctamente: ${response.body}');
       // Ruta iniciada correctamente
       return;
     } else if (response.statusCode == 401) {
@@ -118,21 +119,57 @@ class RoutesService {
     return null;
   }
 
-  Future<String?> getTrackingSessionId(String driverId) async {
+  Future<String?> startTrackingSessionId(String driverId) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
-    final url = Uri.parse('$baseUrl/tracking/start/$driverId');
-    final response = await http.post(
+    final url = Uri.parse('$baseUrl/driver-tracker/tracking/start/$driverId');
+    final response = await http.get(
       url,
       headers: {'Authorization': 'Bearer $token'},
     );
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
+      if (kDebugMode) {
+        print('Response data Start Trackin: $data');
+      }
       return data['data']['sessionId'] as String?;
     }
     if (kDebugMode) {
       print('Error al obtener sessionId: ${response.body}');
     }
     return null;
+  }
+
+  Future<void> endTrackingSessionId(String routeId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    final url = Uri.parse('$baseUrl/driver-tracker/tracking/stop/$routeId');
+
+    final response = await http.get(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      if (kDebugMode) {
+        print('Tracking succededs ${response.body}');
+      }
+      // Ruta finalizada correctamente
+      return;
+    } else if (response.statusCode == 401) {
+      // Token inválido o expirado
+      //await prefs.clear();
+      throw Exception('Sesión expirada, vuelve a iniciar sesión');
+    } else {
+      if (kDebugMode) {
+        print('Error apagando: ${response.body}');
+      }
+      throw Exception(
+        jsonDecode(response.body)['message'] ?? 'Error al finalizar ruta',
+      );
+    }
   }
 }
