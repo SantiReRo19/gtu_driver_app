@@ -7,6 +7,7 @@ import 'package:gtu_driver_app/driver_app/data/services/routes_service.dart';
 import 'package:gtu_driver_app/driver_app/presentation/pages/login.dart';
 import 'package:gtu_driver_app/driver_app/presentation/widgets/profile_drawer.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/home/start_section.dart';
 import '../widgets/home/panel_main.dart';
 import '../widgets/home/bottom_menu.dart';
@@ -192,12 +193,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       horaInicioTurnoStr = _formatHora(now);
     });
 
-    // ...resto del flujo igual...
+    final prefs = await SharedPreferences.getInstance();
+    final driverId = prefs.getString('userId'); // o como lo guardes
+
+    final sessionId = await routesService.getTrackingSessionId(driverId!);
+
     _websocket = Websocketservice(
-      driverId: "2",
-      wsUrl: "wss://api.gtuadmin.lat/ws",
+      driverId: driverId,
+      wsUrl: "ws://api.gtuadmin.lat/ws",
       onLocationReceived: (data) {},
     );
+    _websocket!.sessionId = sessionId; // <-- así lo asignas
     _websocket!.connect();
 
     _startLocationListener();

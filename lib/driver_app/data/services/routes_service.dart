@@ -117,4 +117,22 @@ class RoutesService {
     }
     return null;
   }
+
+  Future<String?> getTrackingSessionId(String driverId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    final url = Uri.parse('$baseUrl/tracking/start/$driverId');
+    final response = await http.post(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['data']['sessionId'] as String?;
+    }
+    if (kDebugMode) {
+      print('Error al obtener sessionId: ${response.body}');
+    }
+    return null;
+  }
 }

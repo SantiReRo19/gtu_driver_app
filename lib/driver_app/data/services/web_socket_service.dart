@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
 
 class Websocketservice {
@@ -37,7 +38,12 @@ class Websocketservice {
           'longitude': longitude.toString(),
         }),
       );
-      print('Enviando ubicación al backend: $latitude, $longitude');
+      if (kDebugMode) {
+        print('Enviando ubicación al back: $latitude, $longitude');
+      }
+    }
+    if (kDebugMode) {
+      print('No se esta Enviando ubicación al back: $latitude, $longitude');
     }
   }
 
