@@ -27,11 +27,14 @@ class AuthService {
         throw Exception('Solo conductores pueden ingresar');
       }
 
+      print(user);
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', user['accessToken']);
       await prefs.setString('userName', user['name']);
       await prefs.setString('userEmail', user['email']);
       await prefs.setString('userRole', user['role']);
+      await prefs.setString('userId', user['userId'].toString());
       return true;
     } else {
       try {

@@ -38,7 +38,14 @@ class RoutesService {
   Future<List<Map<String, dynamic>>> getAssignedRoutes() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
-    final url = Uri.parse('$baseUrl/assign-driver/assignments/driver/2');
+    final userId = prefs.getString('userId');
+    final url = Uri.parse('$baseUrl/assign-driver/assignments/driver/$userId');
+    if (kDebugMode) {
+      print('URL: $url');
+      print('Token: $token');
+      print('User ID: $userId');
+    }
+
     final response = await http.get(
       url,
       headers: {'Authorization': 'Bearer $token'},
@@ -93,15 +100,17 @@ class RoutesService {
   Future<String?> getDriverName(int driverId) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
-    final url = Uri.parse('$baseUrl/assign-driver/assignments/driver/$driverId');
+    final url = Uri.parse(
+      '$baseUrl/assign-driver/assignments/driver/$driverId',
+    );
     final response = await http.get(
       url,
       headers: {'Authorization': 'Bearer $token'},
     );
     final data = jsonDecode(response.body);
-      if (kDebugMode) {
-        print('Response data: $data');
-      }
+    if (kDebugMode) {
+      print('Response data: $data');
+    }
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return data['data']['name'] as String?;

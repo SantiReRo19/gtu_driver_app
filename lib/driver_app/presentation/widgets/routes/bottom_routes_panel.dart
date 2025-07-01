@@ -3,7 +3,7 @@ import '../../../data/services/routes_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class BottomRoutesPanel extends StatefulWidget {
-  const BottomRoutesPanel({Key? key}) : super(key: key);
+  const BottomRoutesPanel({super.key});
 
   @override
   State<BottomRoutesPanel> createState() => _BottomRoutesPanelState();
