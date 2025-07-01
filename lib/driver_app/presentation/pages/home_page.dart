@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gtu_driver_app/driver_app/data/services/routes_service.dart';
+import 'package:gtu_driver_app/driver_app/presentation/pages/login.dart';
 import 'package:gtu_driver_app/driver_app/presentation/widgets/profile_drawer.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../widgets/home/start_section.dart';
@@ -12,6 +15,7 @@ import '../widgets/home/welcome_header.dart';
 import '../widgets/driver_status.dart';
 import '../../data/models/driver_data.dart';
 import '../widgets/routes/bottom_routes_panel.dart';
+import '../../data/services/web_socket_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -22,6 +26,14 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   DriverStatus status = DriverStatus.inactive;
+  Websocketservice? _websocket;
+  StreamSubscription? _locationSubscription;
+
+  String? rutaAsignada;
+  String? horaInicioTurnoStr;
+  DateTime? horaInicioTurno;
+  DateTime? horaFinTurno;
+  Duration? duracionTurno;
 
   late AnimationController busMoveScaleController;
   late Animation<Offset> busPositionAnimation;
@@ -36,6 +48,16 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late AnimationController elementsOpacityController;
   late Animation<double> elementsOpacityAnimation;
 
+  late AnimationController panelFadeController;
+  late Animation<double> panelFadeAnimation;
+
+  late AnimationController finishTextController;
+  late Animation<double> finishTextFadeAnimation;
+
+  bool showFinishText = false;
+  bool showStartText = false;
+  bool showPanel = false;
+
   late Timer? timer;
   DateTime currentTime = DateTime.now();
   static const _eventChannel = EventChannel(
@@ -44,6 +66,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   static const _methodChannel = MethodChannel(
     "com.example.gtu_driver_app/bg_service",
   );
+
+  String _formatHora(DateTime dt) {
+    int hour = dt.hour;
+    final ampm = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12 == 0 ? 12 : hour % 12;
+    final m = dt.minute.toString().padLeft(2, '0');
+    return '$hour:$m $ampm';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -101,6 +132,22 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       CurvedAnimation(parent: elementsOpacityController, curve: Curves.easeIn),
     );
 
+    panelFadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    panelFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: panelFadeController, curve: Curves.easeOut),
+    );
+
+    finishTextController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    finishTextFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: finishTextController, curve: Curves.easeInOut),
+    );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _requestLocationPermission();
     });
@@ -118,19 +165,62 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   void onStartPressed() async {
     if (status != DriverStatus.inactive) return;
-    // hacer http activar ruta enviar socket
+
     setState(() {
       status = DriverStatus.starting;
+      showPanel = false;
     });
 
-    buttonFadeController.forward().then((_) async {
-      await busMoveScaleController.forward();
-      setState(() {
-        status = DriverStatus.active;
-      });
-      headerOpacityController.forward();
-      elementsOpacityController.forward();
+    // 1. Cargar ruta asignada
+    final routesService = RoutesService();
+    final assignedRoutes = await routesService.getAssignedRoutes();
+    String? nombreRuta;
+    if (assignedRoutes.isNotEmpty) {
+      final allRoutes = await routesService.getAllRoutes();
+      final routeId = assignedRoutes[0]['routeId'];
+      final route = allRoutes.firstWhere(
+        (r) => r['id'] == routeId,
+        orElse: () => null,
+      );
+      nombreRuta = route != null ? route['name'] : 'Ruta desconocida';
+    }
+    final now = DateTime.now();
+
+    setState(() {
+      rutaAsignada = nombreRuta ?? 'Sin ruta';
+      horaInicioTurno = now;
+      horaInicioTurnoStr = _formatHora(now);
     });
+
+    // ...resto del flujo igual...
+    _websocket = Websocketservice(
+      driverId: "2",
+      wsUrl: "wss://api.gtuadmin.lat/ws",
+      onLocationReceived: (data) {},
+    );
+    _websocket!.connect();
+
+    _startLocationListener();
+
+    await buttonFadeController.forward();
+    await busMoveScaleController.forward();
+
+    setState(() {
+      showStartText = true;
+    });
+    await finishTextController.forward();
+    await Future.delayed(const Duration(seconds: 1));
+    await finishTextController.reverse();
+    setState(() {
+      showStartText = false;
+      status = DriverStatus.active;
+      showPanel = true;
+    });
+
+    panelFadeController.value = 0.0;
+    await panelFadeController.forward();
+    elementsOpacityController.forward();
+    await _startLocationService();
   }
 
   void onRetirePressed() {
@@ -138,7 +228,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       context: context,
       builder: (context) => ConfirmationDialog(
         title: 'Confirmación',
-        content: '¿Seguro que quieres retirarte del turno?',
+        content: '¿Seguro que quieres finalizar el turno?',
         onConfirm: _retireTurn,
       ),
     );
@@ -147,15 +237,68 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   void _retireTurn() async {
     if (status != DriverStatus.active) return;
 
+    await _stopLocationService();
+    _websocket?.disconnect();
+    _websocket = null;
+    _locationSubscription?.cancel();
+    _locationSubscription = null;
+
+    // 1. Desvanece el panel
+    await panelFadeController.reverse();
+
+    // 2. Mueve el bus al centro (animación reversa)
     await busMoveScaleController.reverse();
 
+    // 3. Calcula duración del turno
+    final fin = DateTime.now();
+    horaFinTurno = fin;
+    if (horaInicioTurno != null) {
+      duracionTurno = fin.difference(horaInicioTurno!);
+    } else {
+      duracionTurno = null;
+    }
+
+    // 4. Muestra el mensaje "Buen trabajo"
     setState(() {
-      status = DriverStatus.offDuty;
+      showFinishText = true;
     });
-    buttonFadeController.reverse();
-    headerOpacityController.reset();
-    elementsOpacityController.reset();
+    await finishTextController.forward();
+
+    // 5. Espera 2 segundos con el mensaje visible y blur
+    await Future.delayed(const Duration(seconds: 2));
+
+    // 6. Oculta el mensaje y vuelve a estado inactivo
+    await finishTextController.reverse();
+    setState(() {
+      showFinishText = false;
+      status = DriverStatus.inactive;
+      showPanel = false;
+    });
+
+    // 7. Restaura el header para que WelcomeHeader sea visible
+    panelFadeController.value = 0.0;
     headerOpacityController.value = 1.0;
+    elementsOpacityController.value = 0.0;
+  }
+
+  void _startLocationListener() {
+    _locationSubscription?.cancel();
+    _locationSubscription = _eventChannel.receiveBroadcastStream().listen(
+      (location) {
+        // location: "lat,lon"
+        final parts = location.toString().split(',');
+        if (parts.length == 2) {
+          final lat = double.tryParse(parts[0]);
+          final lon = double.tryParse(parts[1]);
+          if (lat != null && lon != null && _websocket != null) {
+            _websocket!.sendLocation(lat, lon);
+          }
+        }
+      },
+      onError: (error) {
+        log("Error al recibir ubicación: $error");
+      },
+    );
   }
 
   @override
@@ -167,20 +310,22 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       body: SafeArea(
         child: Stack(
           children: [
-            // Header de bienvenida
-            if (status == DriverStatus.inactive ||
-                status == DriverStatus.offDuty)
+            // Header de bienvenida SIEMPRE visible cuando corresponde
+            if ((status == DriverStatus.inactive ||
+                    status == DriverStatus.offDuty) &&
+                !showFinishText &&
+                !showStartText)
               Positioned(
                 top: 150,
                 left: 0,
                 right: 0,
                 child: WelcomeHeader(
-                  opacity: headerOpacityAnimation,
+                  opacity: AlwaysStoppedAnimation(1.0),
                   text: '¿Estas listo?',
                 ),
               ),
 
-            // Sección de inicio (bus + botón)
+            // Sección de inicio LOGO, BUS Y BOTÓN
             StartSection(
               status: status,
               busPositionAnimation: busPositionAnimation,
@@ -189,44 +334,167 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               buttonActive: status == DriverStatus.offDuty ? false : true,
             ),
 
-            // Panel principal (hora, estado, ruta y botón "En ruta")
-            if (status == DriverStatus.active ||
-                status == DriverStatus.starting)
+            Positioned(
+              top: 24,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Image.asset(
+                  'assets/logoblue.png',
+                  width: 70,
+                  height: 70,
+                ),
+              ),
+            ),
+
+            // Panel principal (solo si showPanel es true y no hay overlays)
+            if (showPanel &&
+                status != DriverStatus.inactive &&
+                status != DriverStatus.offDuty &&
+                !showFinishText &&
+                !showStartText)
               Positioned(
                 top: size.height * 0.4,
                 left: 0,
                 right: 0,
                 child: FadeTransition(
-                  opacity: elementsOpacityAnimation,
+                  opacity: panelFadeAnimation,
                   child: PanelMain(
                     currentTime: currentTime,
+                    status: status,
                     onRetirePressed: onRetirePressed,
+                    onStartPressed: onStartPressed,
+                    rutaAsignada: rutaAsignada,
+                    horaInicioTurnoStr: horaInicioTurnoStr,
                   ),
                 ),
               ),
 
-            // Menú inferior fijo
+            // Overlay de mensaje "Buen trabajo, turno finalizado" con blur y animación
+            if (showFinishText)
+              Positioned.fill(
+                child: Stack(
+                  children: [
+                    BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                      child: Container(color: Colors.black.withOpacity(0.1)),
+                    ),
+                    Center(
+                      child: FadeTransition(
+                        opacity: finishTextFadeAnimation,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                            vertical: 24,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.85),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black26.withOpacity(0.15),
+                                blurRadius: 12,
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                "¡Buen trabajo, turno finalizado!",
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF5096C2),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              if (duracionTurno != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 12.0),
+                                  child: Text(
+                                    "Hiciste un turno de ${duracionTurno!.inHours} horas y ${duracionTurno!.inMinutes.remainder(60)} minutos.",
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      color: Colors.black87,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Overlay de mensaje "Turno iniciado" con blur y animación
+            if (showStartText)
+              Positioned.fill(
+                child: Stack(
+                  children: [
+                    BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                      child: Container(color: Colors.black.withOpacity(0.1)),
+                    ),
+                    Center(
+                      child: FadeTransition(
+                        opacity: finishTextFadeAnimation,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                            vertical: 24,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.85),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black26.withOpacity(0.15),
+                                blurRadius: 12,
+                              ),
+                            ],
+                          ),
+                          child: const Text(
+                            "¡Turno iniciado!",
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF5096C2),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Menú inferior SIEMPRE visible y solo con dos botones
             Align(
               alignment: Alignment.bottomCenter,
-              child: FadeTransition(
-                opacity: elementsOpacityAnimation,
-                child: BottomMenu(
-                  onProfilePressed: () async {
-                    final driverData = await getDriverData();
-                    showModalBottomSheet(
-                      context: context,
-                      builder: (context) => ProfileDrawer(
-                        name: driverData['name'] ?? '',
-                        email: driverData['email'] ?? '',
-                        role: driverData['role'] ?? '',
-                      ),
-                    );
-                  },
-                  onRoutesPressed: () {
-                    showRoutesPanel(context);
-                  },
-                  onOtherPressed: () {},
-                ),
+              child: BottomMenu(
+                onProfilePressed: () async {
+                  final driverData = await getDriverData();
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => ProfileDrawer(
+                      name: driverData['name'] ?? '',
+                      email: driverData['email'] ?? '',
+                      role: driverData['role'] ?? '',
+                      onLogout: _handleLogout,
+                      status: status,
+                    ),
+                  );
+                },
+                onRoutesPressed: () {
+                  showRoutesPanel(context);
+                },
               ),
             ),
           ],
@@ -246,17 +514,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         );
       }
     }
-  }
-
-  void _startLocationListener() {
-    _eventChannel.receiveBroadcastStream().listen(
-      (location) {
-        //
-      },
-      onError: (error) {
-        log("Error al recibir ubicación: $error");
-      },
-    );
   }
 
   Future<void> _startLocationService() async {
@@ -291,6 +548,39 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       await _methodChannel.invokeMethod("stopService");
     } catch (e) {
       print("Error al detener el servicio: $e");
+    }
+  }
+
+  void _handleLogout() {
+    showDialog(
+      context: context,
+      builder: (context) => ConfirmationDialog(
+        title: 'Cerrar sesión',
+        content: '¿Seguro que quieres cerrar sesión?',
+        onConfirm: _logoutWithAnimation,
+      ),
+    );
+  }
+
+  void _logoutWithAnimation() async {
+    // Animación de salida para todos los elementos
+    await Future.wait([
+      panelFadeController.reverse(),
+      elementsOpacityController.reverse(),
+      headerOpacityController.reverse(),
+      buttonFadeController.reverse(),
+      busMoveScaleController.reverse(),
+    ]);
+
+    // Espera un poco para que la animación se vea fluida
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    // Navega al login (elimina todo el stack)
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const Login()),
+        (route) => false,
+      );
     }
   }
 }

@@ -28,12 +28,15 @@ class LoginForm extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Image.asset('assets/logoblue.png', width: 150, height: 150),
+          //const SizedBox(height: 8),
           const Text(
             'GTU',
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 45,
               fontWeight: FontWeight.bold,
               color: Colors.blueAccent,
+              letterSpacing: 2,
             ),
           ),
           const SizedBox(height: 16),

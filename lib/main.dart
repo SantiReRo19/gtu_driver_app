@@ -14,9 +14,9 @@ class BusDriverApp extends StatelessWidget {
       title: 'Bus Driver App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primaryColor: const Color(0xFF5FBF7A), // Light green
+        primaryColor: const Color(0xFF5FBF7A),
         colorScheme: ColorScheme.fromSwatch().copyWith(
-          secondary: const Color(0xFF4A90E2), // Blue
+          secondary: const Color(0xFF4A90E2),
         ),
         scaffoldBackgroundColor: Colors.white,
         elevatedButtonTheme: ElevatedButtonThemeData(

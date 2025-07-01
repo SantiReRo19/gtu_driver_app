@@ -3,13 +3,11 @@ import 'package:flutter/material.dart';
 class BottomMenu extends StatelessWidget {
   final VoidCallback onProfilePressed;
   final VoidCallback onRoutesPressed;
-  final VoidCallback onOtherPressed;
 
   const BottomMenu({
     super.key,
     required this.onProfilePressed,
     required this.onRoutesPressed,
-    required this.onOtherPressed,
   });
 
   @override
@@ -36,10 +34,6 @@ class BottomMenu extends StatelessWidget {
           IconButton(
             onPressed: onProfilePressed,
             icon: const Icon(Icons.person, size: 36, color: Colors.black87),
-          ),
-          IconButton(
-            onPressed: onOtherPressed,
-            icon: const Icon(Icons.menu, size: 32, color: Colors.black54),
           ),
         ],
       ),

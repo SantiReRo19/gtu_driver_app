@@ -89,4 +89,23 @@ class RoutesService {
       throw Exception('Error al obtener todas las rutas');
     }
   }
+
+  Future<String?> getDriverName(int driverId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    final url = Uri.parse('$baseUrl/assign-driver/assignments/driver/$driverId');
+    final response = await http.get(
+      url,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    final data = jsonDecode(response.body);
+      if (kDebugMode) {
+        print('Response data: $data');
+      }
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['data']['name'] as String?;
+    }
+    return null;
+  }
 }

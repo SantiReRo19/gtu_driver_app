@@ -29,11 +29,17 @@ class StartSection extends StatelessWidget {
         // Bus
         Align(
           alignment: const Alignment(0, -0.1),
-          child: BusAnimation(
-            positionAnimation: busPositionAnimation,
-            scaleAnimation: busScaleAnimation,
-            status: status,
-          ),
+          child: status == DriverStatus.active || status == DriverStatus.starting
+              ? BusAnimation(
+                  positionAnimation: busPositionAnimation,
+                  scaleAnimation: busScaleAnimation,
+                  status: status,
+                )
+              : Image.asset(
+                  'assets/bus.png',
+                  width: size.width,
+                  fit: BoxFit.fitWidth,
+                ),
         ),
         // Botón de inicio
         if (status == DriverStatus.inactive || status == DriverStatus.offDuty)

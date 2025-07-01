@@ -28,6 +28,7 @@ class Websocketservice {
 
   void sendLocation(double latitude, double longitude) {
     if (_client != null && _client!.isActive && sessionId != null) {
+      //if (_client != null && _client!.isActive) {
       _client!.send(
         destination: '/app/tracking/driver/$driverId/send',
         headers: {'token': sessionId!},
@@ -36,6 +37,7 @@ class Websocketservice {
           'longitude': longitude.toString(),
         }),
       );
+      print('Enviando ubicación al backend: $latitude, $longitude');
     }
   }
 

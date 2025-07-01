@@ -115,19 +115,17 @@ class _BottomRoutesPanelState extends State<BottomRoutesPanel> {
                         ),
                         children: [
                           //if (myRoute['description'] != null)
-                          ListTile(
-                            title: Text(
-                              allRoutes.firstWhere(
-                                    (e) => e['id'] == myRoute[0]['routeId'],
-                                  )['name'] ??
-                                  'Ruta desconocida',
-                            ),
-                          ),
-                          ListTile(
-                            title: Text(
-                              'Conductor: ${userName ?? 'Sin asignar'}',
-                            ),
-                          ),
+                          ...allRoutes
+                              .where((e) => e['id'] == myRoute[0]['routeId'])
+                              .map(
+                                (e) => ListTile(
+                                  title: Text(
+                                    'Descripción: ${e['description'] ?? 'No disponible'}',
+                                  ),
+                                ),
+                              ),
+
+                          ListTile(title: Text('Conductor: $userName')),
                         ],
                       )
                     : Container(
@@ -177,9 +175,6 @@ class _BottomRoutesPanelState extends State<BottomRoutesPanel> {
                             ListTile(
                               title: Text('Descripción: ${e['description']}'),
                             ),
-                          ListTile(
-                            title: Text('Conductor asignado: "Sin asignar"}'),
-                          ),
                         ],
                       ),
                     ),

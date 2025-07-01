@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:gtu_driver_app/driver_app/presentation/widgets/update_password.dart';
+import '../../presentation/widgets/home/active_label.dart';
+import '../../presentation/widgets/driver_status.dart';
 
 class ProfileDrawer extends StatelessWidget {
   final String name;
   final String email;
   final String role;
-  final String status = 'Conectado';
   final String? imageUrl;
+  final VoidCallback? onLogout;
+  final DriverStatus status;
+  final ScrollController? scrollController;
 
   const ProfileDrawer({
     super.key,
@@ -14,9 +18,10 @@ class ProfileDrawer extends StatelessWidget {
     required this.email,
     required this.role,
     this.imageUrl,
+    this.onLogout,
+    required this.status,
+    this.scrollController,
   });
-
-  bool get isConnected => false; // Simulación de estado de conexión
 
   void showUpdatePasswordDrawer(BuildContext context) {
     showModalBottomSheet(
@@ -35,94 +40,88 @@ class ProfileDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final maxHeight = MediaQuery.of(context).size.height * 0.85;
+
     return SafeArea(
       child: SingleChildScrollView(
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.green.shade200,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Perfil',
-                style: TextStyle(
-                  fontSize: 20,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxHeight),
+          child: IntrinsicHeight(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.green.shade200,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
                 ),
               ),
-              const SizedBox(height: 16),
-              CircleAvatar(
-                radius: 40,
-                backgroundColor: Colors.white,
-                backgroundImage: imageUrl != null
-                    ? NetworkImage(imageUrl!)
-                    : null,
-                child: imageUrl == null
-                    ? const Icon(Icons.person, size: 40, color: Colors.grey)
-                    : null,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                name,
-                style: const TextStyle(
-                  fontSize: 18,
-                  color: Color.fromARGB(255, 252, 252, 252),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    isConnected ? 'Conectado' : 'Desconectado',
+                  const Text(
+                    'Perfil',
                     style: TextStyle(
-                      fontSize: 18,
-                      color: isConnected
-                          ? const Color.fromARGB(255, 33, 216, 140)
-                          : const Color.fromARGB(255, 106, 56, 36),
-                      fontWeight: FontWeight.w500,
+                      fontSize: 20,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(width: 6),
-                  Icon(
-                    isConnected
-                        ? Icons.check_circle_outline
-                        : Icons.cancel_outlined,
-                    color: isConnected ? Colors.green : Colors.red,
-                    size: 20,
+                  const SizedBox(height: 16),
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: Colors.white,
+                    backgroundImage: imageUrl != null
+                        ? NetworkImage(imageUrl!)
+                        : null,
+                    child: imageUrl == null
+                        ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                        : null,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      color: Color.fromARGB(255, 252, 252, 252),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  ActiveLabel(status: status),
+
+                  const SizedBox(height: 24),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      children: [
+                        //_buildTile(context, Icons.person_outline, 'Tu perfil'),
+                        _buildTile(
+                          context,
+                          Icons.privacy_tip_outlined,
+                          'Política de privacidad',
+                        ),
+                        _buildTile(
+                          context,
+                          Icons.update,
+                          'Actualizar contraseña',
+                        ),
+                        const Divider(),
+                        _buildTile(
+                          context,
+                          Icons.logout,
+                          'Cerrar sesión',
+                          color: Colors.red,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  children: [
-                    _buildTile(context, Icons.person_outline, 'Tu perfil'),
-                    _buildTile(
-                      context,
-                      Icons.privacy_tip_outlined,
-                      'Política de privacidad',
-                    ),
-                    _buildTile(context, Icons.update, 'Actualizar contraseña'),
-                    const Divider(),
-                    _buildTile(
-                      context,
-                      Icons.logout,
-                      'Cerrar sesión',
-                      color: Colors.red,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -144,7 +143,8 @@ class ProfileDrawer extends StatelessWidget {
         if (title == 'Actualizar contraseña') {
           showUpdatePasswordPanel(context);
         } else if (title == 'Cerrar sesión') {
-          // Aquí puedes implementar la lógica para cerrar sesión
+          Navigator.pop(context); // Cierra el drawer
+          if (onLogout != null) onLogout!();
           print('Cerrar sesión');
         } else {
           print('Navegar a $title');
