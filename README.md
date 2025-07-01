@@ -34,10 +34,10 @@ En esta arquitectura Flutter, la carpeta `services` agrupa los distintos servici
 Cada servicio encapsula métodos que permiten enviar y recibir datos desde el backend. Algunos ejemplos incluyen:
 
 - `LoginService`: gestiona el envío de credenciales (usuario y contraseña) para autenticar al usuario.  
-- `HomePageService`: permite iniciar y finalizar turnos.  
+- `HomePage`: permite iniciar y finalizar turnos.  
 - `AuthService`: administra la autenticación y el manejo seguro de tokens.  
 - `WebSocketService`: establece una conexión en tiempo real con el backend para transmitir la ubicación del dispositivo.  
-- `RoutesService`: maneja todas las peticiones relacionadas con rutas.
+- `Rout_Service`: maneja todas las peticiones relacionadas con rutas.
 
 ### Patrón de uso
 
@@ -62,7 +62,7 @@ La navegación y las pantallas principales de la aplicación se estructuran en t
 - Una vez autenticado, el usuario puede iniciar un turno, consultar su perfil o visualizar rutas.  
 - Al presionar el botón “Iniciar Turno”, la aplicación establece una conexión con el backend mediante el `WebSocketService`.  
 - Este servicio registra el inicio del turno y comienza a enviar la ubicación actual del dispositivo.  
-- El backend responde con los datos del turno activo, incluyendo latitud y longitud, que la app utiliza para mostrar la ubicación del conductor en tiempo real.
+- El backend responde con los datos del turno activo, incluyendo latitud y longitud, que la app de pasajeros utiliza para mostrar la ubicación del conductor en tiempo real.
 
 ### c. Finalización de turno
 
